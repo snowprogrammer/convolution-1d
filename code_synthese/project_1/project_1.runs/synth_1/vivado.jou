@@ -1,0 +1,12 @@
+#-----------------------------------------------------------
+# Vivado v2019.1 (64-bit)
+# SW Build 2552052 on Fri May 24 14:49:42 MDT 2019
+# IP Build 2548770 on Fri May 24 18:01:18 MDT 2019
+# Start of session at: Wed Mar  4 15:05:10 2020
+# Process ID: 18452
+# Current directory: G:/projet labo/code_synthese/project_1/project_1.runs/synth_1
+# Command line: vivado.exe -log ldconv_cnn.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source ldconv_cnn.tcl
+# Log file: G:/projet labo/code_synthese/project_1/project_1.runs/synth_1/ldconv_cnn.vds
+# Journal file: G:/projet labo/code_synthese/project_1/project_1.runs/synth_1\vivado.jou
+#-----------------------------------------------------------
+source ldconv_cnn.tcl -notrace
