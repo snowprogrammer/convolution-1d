@@ -12,12 +12,12 @@ generic (
 	);
 port (input: in  signed (DATA_WIDTH - 1 downto 0);
       start: in std_logic;
-   reset: in std_logic;
-   clock: in std_logic;
-   data_in_mux: in  signed (DATA_WIDTH2 - 1 downto 0):="0000000010000000";
-   mode: in STD_LOGIC:='0';
-   weight: in int_array (1 to KERNEL_SIZE):=(2,4,2,2);
-   output: out signed (DATA_WIDTH2-1 downto 0));
+   reset: in std_logic;
+   clock: in std_logic;
+   data_in_mux: in  signed (DATA_WIDTH2 - 1 downto 0):="0000000010000000";
+   mode: in STD_LOGIC:='0';
+   weight: in int_array (1 to KERNEL_SIZE):=(2,4,2,2);
+   output: out signed (DATA_WIDTH2-1 downto 0));
 END ldconv_cnn;
 
 Architecture rtl of ldconv_cnn is
@@ -110,8 +110,6 @@ signal  data_out_ibuffer: signed(DATA_WIDTH-1 downto 0);
 signal  psum_data_in,psum_data_out,data_out_mux:signed(DATA_WIDTH2-1 downto 0);
 signal  etat:integer;
 signal  tour1:integer:=0; 
---signal  tour0:integer:=0; 
---signal  stack1:STD_LOGIC;
 BEGIN 
   ibf: entity work.ibuffer generic map (DATA_WIDTH,Nombre_entree) port map (clock, rst_ibuffer, write_en_ibuffer, input, read_en_ibuffer, data_out_ibuffer, empty_ibuffer, full_ibuffer);
   ipconv: entity work.ipconv1d generic map (DATA_WIDTH,KERNEL_SIZE,DATA_WIDTH2) port map (data_out_ibuffer, weight, clock, rst_ipconv, write_ready, read_ready, psum_data_in);
@@ -120,65 +118,94 @@ BEGIN
   mu:  entity work.mux generic map (DATA_WIDTH2) port map (data_in_mux, mode, data_out_mux);
   add: entity work.addition generic map (DATA_WIDTH2) port map (psum_data_out, data_out_mux, output);
   etat_machine: entity work.fsm port map (clock,start,reset,full_ibuffer,empty_ibuffer,final,etat); 
-  
---  process (clock)
---     begin 
---     if clock='1' then
---     stack1<=stack;
---     end if;
---  end process;
 
-  state_machine:process(clock)
+--  state_machine:process(clock)
+--        
+--        begin
+--        if clock='1' then
+--         if reset='1' then
+--            rst_ibuffer<='1';
+--            rst_ipconv<='1';
+--            rst_psum<='1';
+--            
+--          elsif etat=2 then -- preserver les entree en ibuffer
+--            rst_ibuffer<='0';
+--            write_en_ibuffer<='1';
+--            read_en_ibuffer<='0';
+--            
+--          elsif etat=3 then 
+--            read_en_psum<='0';
+--            rst_ipconv<='0';
+--            rst_psum<='0';
+--            write_en_ibuffer<='0';
+--            
+--            if empty_ibuffer='1' or read_ready='1'  then  -- si il y a plus de data oubien write flag de 1dconv equale a '1', on arrete a lire dans ibuffer
+--               read_en_ibuffer<='0';
+--            elsif read_ready/='1' then  -- write flag de 1dconv equale a '0' ,lire
+--               read_en_ibuffer<='1';
+--            end if;  
+--           
+--           if write_ready='1' then  --  , si write flag ='1', on arrete a ecrire dans psum.
+--              write_en_psum<='1';
+--           elsif write_ready='0' then
+--               write_en_psum<='0';
+--            end if;
+--
+--          elsif etat=4 then -- dernier round, si nombre de sortie equale qu'on veut, on arrete a mettre en output.
+-- 	       if tour1/=Nombre_sortie then
+--               write_en_psum<='0';
+--               read_en_psum<='1';
+--	       tour1<=tour1+1;
+--               else 
+--	       read_en_psum<='0';
+--               end if;
+--        end if; 
+--      end if;    
+--   end process;
+--
+state_machine:process(clock)
         
         begin
         if clock='1' then
-         if reset='1' then
-            rst_ibuffer<='1';
-            rst_ipconv<='1';
-            rst_psum<='1';
-            
-          elsif etat=2 then -- preserver les entree en ibuffer
-            rst_ibuffer<='0';
-            write_en_ibuffer<='1';
-            read_en_ibuffer<='0';
-            
-          elsif etat=3 then 
-            read_en_psum<='0';
-            rst_ipconv<='0';
-            rst_psum<='0';
-            write_en_ibuffer<='0';
-            
-            if empty_ibuffer='1' or read_ready='1'  then  -- si il y a plus de data oubien write flag de 1dconv equale a '1', on arrete a lire dans ibuffer
-               read_en_ibuffer<='0';
-            elsif read_ready/='1' then  -- write flag de 1dconv equale a '0' ,lire
-               read_en_ibuffer<='1';
-            end if;  
+          if reset='1' then
+             rst_ibuffer<='1';
+             rst_ipconv<='1';
+             rst_psum<='1';
+          else
 
---	    if stack='1' then  -- on count nombre de read flag, si il equle le depth de fifo, on arrete a ecrire dans psum.
---               if tour0=KERNEL_SIZE then
---               write_en_psum<='0';
---	       tour0<=0;
---	       else 
---               write_en_psum<='1';
---	       tour0<=tour0+1;
---               end if;
---            end if;
+          case etat IS
+                  WHEN 1 =>
+		  WHEN 2 => rst_ibuffer<='0';
+                            write_en_ibuffer<='1';
+                            read_en_ibuffer<='0';
+
+		  WHEN 3 => read_en_psum<='0';
+                            rst_ipconv<='0';
+                            rst_psum<='0';
+                            write_en_ibuffer<='0';
+            
+                            if empty_ibuffer='1' or read_ready='1'  then  -- si il y a plus de data oubien write flag de 1dconv equale a '1', on arrete a lire dans ibuffer
+                               read_en_ibuffer<='0';
+                            elsif read_ready/='1' then  -- write flag de 1dconv equale a '0' ,lire
+                               read_en_ibuffer<='1';
+                            end if;  
            
-           if write_ready='1' then  --  , si write flag ='1', on arrete a ecrire dans psum.
-              write_en_psum<='1';
-           elsif write_ready='0' then
-               write_en_psum<='0';
-            end if;
+                            if write_ready='1' then  --  , si write flag ='1', on arrete a ecrire dans psum.
+                               write_en_psum<='1';
+                            elsif write_ready='0' then
+                               write_en_psum<='0';
+                            end if;
 
-          elsif etat=4 then -- dernier round, si nombre de sortie equale qu'on veut, on arrete a mettre en output.
- 	       if tour1/=Nombre_sortie then
-               write_en_psum<='0';
-               read_en_psum<='1';
-	       tour1<=tour1+1;
-               else 
-	       read_en_psum<='0';
-               end if;
-        end if; 
-      end if;    
-   end process;
-END rtl;
+		  WHEN 4 => if tour1/=Nombre_sortie then
+                               write_en_psum<='0';
+                               read_en_psum<='1';
+	                       tour1<=tour1+1;
+                            else 
+	                       read_en_psum<='0';
+                            end if;
+		  WHEN others =>
+	          END CASE; 
+           end if; 
+         end if;
+end process;
+end rtl;
